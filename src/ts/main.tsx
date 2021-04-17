@@ -8,7 +8,7 @@ class MainDiv extends Component<{}, {}> {
     componentDidMount() {
         const canvas = this.canvasRef.current!;
         const resizeCanvas = () => {
-            const sideLength = Math.min(document.documentElement.clientWidth, document.documentElement.clientHeight);
+            const sideLength = Math.min(document.documentElement.clientWidth, document.documentElement.clientHeight) - 1;
             canvas.width = sideLength;
             canvas.height = sideLength;
         };

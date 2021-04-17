@@ -8,6 +8,8 @@ export class Cell {
         left: true,
         right: true,
     };
-    public visited = false;
+    public generated = false;
+    public notTheWayTowardsTheExit = false;
+    public visitedOnTheWayToTheExit = false;
     constructor(public x: number, public y: number, public color: Color) {}
 }

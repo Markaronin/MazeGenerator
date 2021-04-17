@@ -17,7 +17,7 @@ export class MazeGenerator {
             }
         }
         this.cursorLocation = this.cells[0][0];
-        this.cursorLocation.visited = true;
+        this.cursorLocation.generated = true;
         this.cursorLocation.color = this.currentColorShades;
         this.start();
     }
@@ -28,14 +28,13 @@ export class MazeGenerator {
 
     private lastTimestamp = performance.now();
     private doneGenerating = false;
+    private doneSolving = false;
     private loop(timestamp: number) {
         const elapsedTime = (timestamp - this.lastTimestamp) / 1000;
         this.lastTimestamp = timestamp;
         this.tick(elapsedTime);
         this.render();
-        if (!this.doneGenerating) {
-            window.requestAnimationFrame(this.loop.bind(this));
-        }
+        window.requestAnimationFrame(this.loop.bind(this));
     }
 
     private newRandomColor(prevCellColor: Color): Color {
@@ -61,6 +60,20 @@ export class MazeGenerator {
         this.timeSinceLastTick += elapsedTime;
         while (this.timeSinceLastTick >= this.timePerTick) {
             this.timeSinceLastTick -= this.timePerTick;
+            if (!this.doneGenerating) {
+                this.generateNextCell();
+            } else if (!this.doneSolving) {
+                this.doAThing();
+            }
+        }
+    }
+
+    private doAThing() {
+        // First, check if we're already at the exit
+        if (this.cursorLocation.x === config.mazeSize.width - 1 && this.cursorLocation.y === config.mazeSize.height - 1) {
+            this.doneSolving = true;
+            this.cursorPreviousCellsVisited.push(this.cursorLocation);
+        } else {
             const coordsAndDirOfCellsToVisit = [
                 { x: this.cursorLocation.x, y: this.cursorLocation.y - 1, dir: "up" },
                 { x: this.cursorLocation.x, y: this.cursorLocation.y + 1, dir: "down" },
@@ -72,24 +85,56 @@ export class MazeGenerator {
                     coords.x < config.mazeSize.width &&
                     coords.y >= 0 &&
                     coords.y < config.mazeSize.height &&
-                    !this.cells[coords.x][coords.y].visited,
+                    !this.cursorLocation.walls[coords.dir as Direction] &&
+                    !this.cells[coords.x][coords.y].notTheWayTowardsTheExit &&
+                    !this.cells[coords.x][coords.y].visitedOnTheWayToTheExit,
             ) as { x: number; y: number; dir: Direction }[];
             if (coordsAndDirOfCellsToVisit.length > 0) {
                 const coordsOfCellToVisit = coordsAndDirOfCellsToVisit[Math.floor(Math.random() * coordsAndDirOfCellsToVisit.length)];
                 this.cursorPreviousCellsVisited.push(this.cursorLocation);
-                this.cursorLocation.walls[coordsOfCellToVisit.dir] = false;
                 this.cursorLocation = this.cells[coordsOfCellToVisit.x][coordsOfCellToVisit.y];
-                this.cursorLocation.walls[oppositeDirection[coordsOfCellToVisit.dir]] = false;
-                this.cursorLocation.visited = true;
-                this.cursorLocation.color = this.newRandomColor(this.cursorPreviousCellsVisited[this.cursorPreviousCellsVisited.length - 1].color);
+                this.cursorLocation.visitedOnTheWayToTheExit = true;
             } else {
-                this.cursorLocation.color = { r: 100, g: 100, b: 100 };
+                this.cursorLocation.notTheWayTowardsTheExit = true;
                 const potentialCursorLocation = this.cursorPreviousCellsVisited.pop();
                 if (potentialCursorLocation) {
                     this.cursorLocation = potentialCursorLocation;
                 } else {
-                    this.doneGenerating = true;
+                    throw new Error("Oops");
                 }
+            }
+        }
+    }
+
+    private generateNextCell() {
+        const coordsAndDirOfCellsToVisit = [
+            { x: this.cursorLocation.x, y: this.cursorLocation.y - 1, dir: "up" },
+            { x: this.cursorLocation.x, y: this.cursorLocation.y + 1, dir: "down" },
+            { x: this.cursorLocation.x - 1, y: this.cursorLocation.y, dir: "left" },
+            { x: this.cursorLocation.x + 1, y: this.cursorLocation.y, dir: "right" },
+        ].filter(
+            (coords) =>
+                coords.x >= 0 &&
+                coords.x < config.mazeSize.width &&
+                coords.y >= 0 &&
+                coords.y < config.mazeSize.height &&
+                !this.cells[coords.x][coords.y].generated,
+        ) as { x: number; y: number; dir: Direction }[];
+        if (coordsAndDirOfCellsToVisit.length > 0) {
+            const coordsOfCellToVisit = coordsAndDirOfCellsToVisit[Math.floor(Math.random() * coordsAndDirOfCellsToVisit.length)];
+            this.cursorPreviousCellsVisited.push(this.cursorLocation);
+            this.cursorLocation.walls[coordsOfCellToVisit.dir] = false;
+            this.cursorLocation = this.cells[coordsOfCellToVisit.x][coordsOfCellToVisit.y];
+            this.cursorLocation.walls[oppositeDirection[coordsOfCellToVisit.dir]] = false;
+            this.cursorLocation.generated = true;
+            this.cursorLocation.color = this.newRandomColor(this.cursorPreviousCellsVisited[this.cursorPreviousCellsVisited.length - 1].color);
+        } else {
+            this.cursorLocation.color = { r: 100, g: 100, b: 100 };
+            const potentialCursorLocation = this.cursorPreviousCellsVisited.pop();
+            if (potentialCursorLocation) {
+                this.cursorLocation = potentialCursorLocation;
+            } else {
+                this.doneGenerating = true;
             }
         }
     }
@@ -119,6 +164,18 @@ export class MazeGenerator {
                     this.context2d.stroke();
                 }
             }
+        }
+        if (this.doneGenerating) {
+            this.context2d.strokeStyle = "red";
+            this.cursorPreviousCellsVisited.forEach((cell, i) => {
+                if (i < this.cursorPreviousCellsVisited.length - 1) {
+                    const nextCell = this.cursorPreviousCellsVisited[i + 1];
+                    this.context2d.beginPath();
+                    this.context2d.moveTo(cellSize.width * (cell.x + 0.5), cellSize.height * (cell.y + 0.5));
+                    this.context2d.lineTo(cellSize.width * (nextCell.x + 0.5), cellSize.height * (nextCell.y + 0.5));
+                    this.context2d.stroke();
+                }
+            });
         }
     }
 }
