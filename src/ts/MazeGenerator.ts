@@ -4,48 +4,61 @@ import { config } from "./config";
 import { Direction, oppositeDirection } from "./Direction";
 
 export class MazeGenerator {
-    private cells: Cell[][] = [];
-    private cursorLocation: Cell = new Cell(0, 0, { r: 0, g: 0, b: 0 }); // Fake cell to start
-    private cursorPreviousCellsVisited: Cell[] = [];
-    private currentColorShades: Color = {
-        r: Math.floor(Math.random() * 255),
-        g: Math.floor(Math.random() * 255),
-        b: Math.floor(Math.random() * 255),
-    };
+    private cells: Cell[][];
+    private cursorLocation: Cell;
+    private cursorPreviousCellsVisited: Cell[];
 
-    private lastTimestamp = performance.now();
-    private doneGenerating = false;
-    private doneSolving = false;
+    private lastTimestamp;
+    private doneGenerating;
+    private doneSolving;
 
-    private timeSinceLastTick = 0;
-    private timePerTick = 0.005;
+    private timeSinceLastTick;
+    private timePerTick;
 
     private restartMaze() {
-        this.cells = [];
+        const cells: Cell[][] = [];
         for (let x = 0; x < config.mazeSize.width; x++) {
-            this.cells.push([]);
+            cells.push([]);
             for (let y = 0; y < config.mazeSize.height; y++) {
-                this.cells[x].push(new Cell(x, y, { r: 0, g: 0, b: 0 }));
+                cells[x].push(new Cell(x, y, { r: 0, g: 0, b: 0 }));
             }
         }
-        this.cursorLocation = this.cells[0][0];
-        this.cursorLocation.generated = true;
-        this.cursorLocation.color = this.currentColorShades;
-        this.cursorPreviousCellsVisited = [];
-        this.currentColorShades = {
+        const cursorLocation = cells[0][0];
+        cursorLocation.generated = true;
+        cursorLocation.color = {
             r: Math.floor(Math.random() * 255),
             g: Math.floor(Math.random() * 255),
             b: Math.floor(Math.random() * 255),
         };
-        this.lastTimestamp = performance.now();
-        this.doneGenerating = false;
-        this.doneSolving = false;
-        this.timeSinceLastTick = 0;
-        this.timePerTick = 0.005;
+        const cursorPreviousCellsVisited: Cell[] = [];
+        const lastTimestamp = performance.now();
+        const doneGenerating = false;
+        const doneSolving = false;
+        const timeSinceLastTick = 0;
+        const timePerTick = 0.005;
+        return {
+            cells,
+            cursorLocation,
+            cursorPreviousCellsVisited,
+            lastTimestamp,
+            doneGenerating,
+            doneSolving,
+            timeSinceLastTick,
+            timePerTick,
+        };
     }
 
     constructor(private readonly canvas: HTMLCanvasElement, private readonly context2d: CanvasRenderingContext2D) {
-        this.restartMaze();
+        ({
+            cells: this.cells,
+            cursorLocation: this.cursorLocation,
+            cursorPreviousCellsVisited: this.cursorPreviousCellsVisited,
+            lastTimestamp: this.lastTimestamp,
+            doneGenerating: this.doneGenerating,
+            doneSolving: this.doneSolving,
+            timeSinceLastTick: this.timeSinceLastTick,
+            timePerTick: this.timePerTick,
+        } = this.restartMaze());
         window.requestAnimationFrame(this.loop.bind(this));
     }
 
@@ -83,7 +96,16 @@ export class MazeGenerator {
             } else if (!this.doneSolving) {
                 this.doAThing();
             } else {
-                this.restartMaze();
+                ({
+                    cells: this.cells,
+                    cursorLocation: this.cursorLocation,
+                    cursorPreviousCellsVisited: this.cursorPreviousCellsVisited,
+                    lastTimestamp: this.lastTimestamp,
+                    doneGenerating: this.doneGenerating,
+                    doneSolving: this.doneSolving,
+                    timeSinceLastTick: this.timeSinceLastTick,
+                    timePerTick: this.timePerTick,
+                } = this.restartMaze());
             }
         }
     }
