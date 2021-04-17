@@ -32,7 +32,11 @@ export class MazeGenerator {
         this.cursorLocation.generated = true;
         this.cursorLocation.color = this.currentColorShades;
         this.cursorPreviousCellsVisited = [];
-        this.currentColorShades = { r: 0, g: 255, b: 0 };
+        this.currentColorShades = {
+            r: Math.floor(Math.random() * 255),
+            g: Math.floor(Math.random() * 255),
+            b: Math.floor(Math.random() * 255),
+        };
         this.lastTimestamp = performance.now();
         this.doneGenerating = false;
         this.doneSolving = false;
