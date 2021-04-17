@@ -27,12 +27,15 @@ export class MazeGenerator {
     }
 
     private lastTimestamp = performance.now();
+    private doneGenerating = false;
     private loop(timestamp: number) {
         const elapsedTime = (timestamp - this.lastTimestamp) / 1000;
         this.lastTimestamp = timestamp;
         this.tick(elapsedTime);
         this.render();
-        window.requestAnimationFrame(this.loop.bind(this));
+        if (!this.doneGenerating) {
+            window.requestAnimationFrame(this.loop.bind(this));
+        }
     }
 
     private newRandomColor(prevCellColor: Color): Color {
@@ -85,7 +88,7 @@ export class MazeGenerator {
                 if (potentialCursorLocation) {
                     this.cursorLocation = potentialCursorLocation;
                 } else {
-                    //Done
+                    this.doneGenerating = true;
                 }
             }
         }
@@ -96,11 +99,13 @@ export class MazeGenerator {
         for (let x = 0; x < config.mazeSize.width; x++) {
             for (let y = 0; y < config.mazeSize.height; y++) {
                 this.context2d.fillStyle = colorToColorString(this.cells[x][y].color);
+                this.context2d.strokeStyle = colorToColorString(this.cells[x][y].color);
                 const cellSize = {
                     width: this.canvas.width / config.mazeSize.width,
                     height: this.canvas.height / config.mazeSize.height,
                 };
                 this.context2d.fillRect(cellSize.width * x, cellSize.height * y, cellSize.width, cellSize.height);
+                this.context2d.strokeRect(cellSize.width * x, cellSize.height * y, cellSize.width, cellSize.height);
                 this.context2d.strokeStyle = config.wallColor;
                 if (this.cells[x][y].walls.up) {
                     this.context2d.beginPath();

@@ -7,12 +7,23 @@ class MainDiv extends Component<{}, {}> {
 
     componentDidMount() {
         const canvas = this.canvasRef.current!;
-        const context2d = canvas.getContext('2d')!;
+        const resizeCanvas = () => {
+            const sideLength = Math.min(document.documentElement.clientWidth, document.documentElement.clientHeight);
+            canvas.width = sideLength;
+            canvas.height = sideLength;
+        };
+        resizeCanvas();
+        window.onresize = resizeCanvas;
+        const context2d = canvas.getContext("2d")!;
         new MazeGenerator(canvas, context2d);
     }
 
     render() {
-        return <canvas ref={this.canvasRef} width="1000" height="1000">Canvas not working</canvas>;
+        return (
+            <canvas ref={this.canvasRef} width="1000" height="1000">
+                Canvas not working
+            </canvas>
+        );
     }
 }
 
