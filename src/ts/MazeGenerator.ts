@@ -4,12 +4,24 @@ import { config } from "./config";
 import { Direction, oppositeDirection } from "./Direction";
 
 export class MazeGenerator {
-    private readonly cells: Cell[][] = [];
-    private cursorLocation: Cell;
+    private cells: Cell[][] = [];
+    private cursorLocation: Cell = new Cell(0, 0, { r: 0, g: 0, b: 0 }); // Fake cell to start
     private cursorPreviousCellsVisited: Cell[] = [];
-    private currentColorShades: Color = { r: 0, g: 255, b: 0 };
+    private currentColorShades: Color = {
+        r: Math.floor(Math.random() * 255),
+        g: Math.floor(Math.random() * 255),
+        b: Math.floor(Math.random() * 255),
+    };
 
-    constructor(private readonly canvas: HTMLCanvasElement, private readonly context2d: CanvasRenderingContext2D) {
+    private lastTimestamp = performance.now();
+    private doneGenerating = false;
+    private doneSolving = false;
+
+    private timeSinceLastTick = 0;
+    private timePerTick = 0.005;
+
+    private restartMaze() {
+        this.cells = [];
         for (let x = 0; x < config.mazeSize.width; x++) {
             this.cells.push([]);
             for (let y = 0; y < config.mazeSize.height; y++) {
@@ -19,16 +31,20 @@ export class MazeGenerator {
         this.cursorLocation = this.cells[0][0];
         this.cursorLocation.generated = true;
         this.cursorLocation.color = this.currentColorShades;
-        this.start();
+        this.cursorPreviousCellsVisited = [];
+        this.currentColorShades = { r: 0, g: 255, b: 0 };
+        this.lastTimestamp = performance.now();
+        this.doneGenerating = false;
+        this.doneSolving = false;
+        this.timeSinceLastTick = 0;
+        this.timePerTick = 0.005;
     }
 
-    private start() {
+    constructor(private readonly canvas: HTMLCanvasElement, private readonly context2d: CanvasRenderingContext2D) {
+        this.restartMaze();
         window.requestAnimationFrame(this.loop.bind(this));
     }
 
-    private lastTimestamp = performance.now();
-    private doneGenerating = false;
-    private doneSolving = false;
     private loop(timestamp: number) {
         const elapsedTime = (timestamp - this.lastTimestamp) / 1000;
         this.lastTimestamp = timestamp;
@@ -54,8 +70,6 @@ export class MazeGenerator {
         return newColor;
     }
 
-    private timeSinceLastTick = 0;
-    private timePerTick = 0.005;
     private tick(elapsedTime: number) {
         this.timeSinceLastTick += elapsedTime;
         while (this.timeSinceLastTick >= this.timePerTick) {
@@ -64,6 +78,8 @@ export class MazeGenerator {
                 this.generateNextCell();
             } else if (!this.doneSolving) {
                 this.doAThing();
+            } else {
+                this.restartMaze();
             }
         }
     }
