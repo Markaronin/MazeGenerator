@@ -96,39 +96,26 @@ export class MazeGenerator {
 
     private render() {
         this.context2d.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        const cellSize = {
+            width: this.canvas.width / config.mazeSize.width,
+            height: this.canvas.height / config.mazeSize.height,
+        };
         for (let x = 0; x < config.mazeSize.width; x++) {
             for (let y = 0; y < config.mazeSize.height; y++) {
-                this.context2d.fillStyle = colorToColorString(this.cells[x][y].color);
-                this.context2d.strokeStyle = colorToColorString(this.cells[x][y].color);
-                const cellSize = {
-                    width: this.canvas.width / config.mazeSize.width,
-                    height: this.canvas.height / config.mazeSize.height,
-                };
-                this.context2d.fillRect(cellSize.width * x, cellSize.height * y, cellSize.width, cellSize.height);
-                this.context2d.strokeRect(cellSize.width * x, cellSize.height * y, cellSize.width, cellSize.height);
+                const cell = this.cells[x][y];
+                this.context2d.fillStyle = colorToColorString(cell.color);
+                this.context2d.fillRect(cellSize.width * x, cellSize.height * y, cellSize.width + 1, cellSize.height + 1);
                 this.context2d.strokeStyle = config.wallColor;
-                if (this.cells[x][y].walls.up) {
-                    this.context2d.beginPath();
-                    this.context2d.moveTo(cellSize.width * x, cellSize.height * y);
-                    this.context2d.lineTo(cellSize.width * (x + 1), cellSize.height * y);
-                    this.context2d.stroke();
-                }
-                if (this.cells[x][y].walls.down) {
+                if (cell.walls.down) {
                     this.context2d.beginPath();
                     this.context2d.moveTo(cellSize.width * x, cellSize.height * (y + 1));
                     this.context2d.lineTo(cellSize.width * (x + 1), cellSize.height * (y + 1));
                     this.context2d.stroke();
                 }
-                if (this.cells[x][y].walls.left) {
+                if (cell.walls.left) {
                     this.context2d.beginPath();
                     this.context2d.moveTo(cellSize.width * x, cellSize.height * y);
                     this.context2d.lineTo(cellSize.width * x, cellSize.height * (y + 1));
-                    this.context2d.stroke();
-                }
-                if (this.cells[x][y].walls.right) {
-                    this.context2d.beginPath();
-                    this.context2d.moveTo(cellSize.width * (x + 1), cellSize.height * y);
-                    this.context2d.lineTo(cellSize.width * (x + 1), cellSize.height * (y + 1));
                     this.context2d.stroke();
                 }
             }
